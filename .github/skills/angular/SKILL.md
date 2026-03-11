@@ -1,8 +1,28 @@
-# Angular Skill — Neo Frontend
+---
+name: angular-architect
+description: Generates Angular 17+ standalone components, configures advanced routing with lazy loading and guards, implements NgRx state management, applies RxJS patterns, and optimizes bundle performance. Use when building Angular 17+ applications with standalone components or signals, setting up NgRx stores, establishing RxJS reactive patterns, performance tuning, or writing Angular tests for enterprise apps.
+license: MIT
+metadata:
+  author: https://github.com/mgattilabs
+  version: "2.0.0"
+  domain: frontend
+  triggers: Angular, Angular 17, standalone components, signals, RxJS, NgRx, Angular performance, Angular routing, Angular testing, zoneless
+  role: specialist
+  scope: implementation
+  output-format: code
+  related-skills: typescript-pro, test-master
+---
 
-> **Trigger**: `angular.json` trovato nella root del progetto
-> **Framework**: Angular (ultima versione stabile)
-> **Questa skill estende le regole generiche di Neo Frontend con convenzioni Angular-specifiche.**
+---
+
+## Core Workflow
+
+1. **Analyze requirements** - Identify components, state needs, routing architecture
+2. **Design architecture** - Plan standalone components, signal usage, state flow with NgRx SignalStore
+3. **Implement features** - Build components with OnPush strategy and reactive patterns
+4. **Manage state** - Setup NgRx SignalStore (`@ngrx/signals`), effects, computed signals as needed; verify store hydration and state flow before proceeding
+5. **Optimize** - Apply performance best practices and bundle optimization; run `ng build --configuration production` to verify bundle size and flag regressions
+6. **Test** - Write unit and integration tests with Jest + Testing Library; verify >85% coverage threshold is met
 
 ---
 
@@ -18,6 +38,63 @@
 | DI               | `inject()` function                     | MAI constructor injection         |
 | Styling          | SCSS + Angular Material theming         | No utility classes esterne        |
 | Testing          | Jest + Testing Library                  | Un test per ogni store e service  |
+
+---
+
+## Reference Guide
+
+Load detailed guidance based on context:
+
+| Topic | Reference | Load When |
+|-------|-----------|-----------|
+| Components | `references/components.md` | Standalone components, signals, input/output |
+| RxJS | `references/rxjs.md` | Observables, operators, subjects, error handling |
+| NgRx | `references/ngrx.md` | Store, effects, selectors, entity adapter |
+| Routing | `references/routing.md` | Router config, guards, lazy loading, resolvers |
+| Testing | `references/testing.md` | TestBed, component tests, service tests |
+
+---
+
+## Quick Reference
+
+> **Vedi le references per esempi completi** (`references/components.md`, `references/rxjs.md`, `references/ngrx.md`)
+
+```typescript
+// Standalone component con signals
+@Component({
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [MatButtonModule, MatCardModule]
+})
+export class UserCardComponent {
+  firstName = input.required<string>();          // signal input
+  selected = output<string>();                   // signal output
+  fullName = computed(() => `${this.firstName()}`); // computed
+}
+
+// RxJS subscription management
+export class UsersComponent {
+  private destroyRef = inject(DestroyRef);
+  
+  ngOnInit() {
+    this.service.getUsers()
+      .pipe(takeUntilDestroyed(this.destroyRef))  // auto-cleanup
+      .subscribe(users => { /* ... */ });
+  }
+}
+
+// NgRx SignalStore
+export const UsersStore = signalStore(
+  { providedIn: 'root' },
+  withState({ items: [], loading: false }),
+  withComputed(({ items }) => ({
+    total: computed(() => items().length)
+  })),
+  withMethods((store) => ({
+    loadAll: rxMethod(/* ... */)
+  }))
+);
+```
 
 ---
 
@@ -406,6 +483,40 @@ html, body {
 
 ---
 
+## Constraints & Best Practices
+
+### ✅ MUST DO
+
+- **Use standalone components** (Angular 17+ default) — non creare più NgModules
+- **Use signals for reactive state** — dove appropriato per semplificare la reattività
+- **Use OnPush change detection** — sempre, nessuna eccezione
+- **Use strict TypeScript configuration** — mantieni `strict: true` in `tsconfig.json`
+- **Implement proper error handling** — in tutti gli RxJS streams (`.pipe(catchError(...))`)
+- **Use `trackBy` functions** — in tutti i `@for` loops per performance
+- **Write tests with >85% coverage** — per store, service e logica critica
+- **Follow Angular style guide** — nomi file kebab-case, classi PascalCase
+- **Use `provideZonelessChangeDetection()`** — per migliori performance
+- **Use inject() function** — per dependency injection invece di constructor
+- **Use Angular Material** — per tutti i componenti UI, nessun HTML naked
+- **Lazy load features** — via `loadChildren` o `loadComponent` nel routing
+
+### ❌ MUST NOT DO
+
+- **Use NgModule-based components** — eccetto quando strettamente necessario per compatibilità legacy
+- **Forget to unsubscribe from observables** — usa `takeUntilDestroyed`, `rxMethod`, o `async` pipe
+- **Use async operations without error handling** — ogni Observable deve avere `error` callback o `catchError`
+- **Skip accessibility attributes** — aggiungi sempre `aria-label`, `role`, etc. dove necessario
+- **Expose sensitive data in client-side code** — mai token, segreti, o dati sensibili hardcoded
+- **Use `any` type** — senza una giustificazione documentata nel commento
+- **Mutate state directly in NgRx** — usa sempre `patchState` o reducer immutabili
+- **Skip unit tests for critical logic** — ogni store e service devono avere test
+- **Use Zone.js** — se presente in un progetto nuovo, rimuovilo e usa zoneless
+- **Use `*ngIf` / `*ngFor`** — usa la nuova sintassi `@if` / `@for` / `@switch`
+- **Use constructor injection** — solo `inject()` function
+- **Hardcode colors in component SCSS** — usa sempre i token del tema Angular Material
+
+---
+
 ## Regole Angular-Specific
 
 Queste regole si aggiungono alle regole assolute dell'agente generico:
@@ -421,3 +532,53 @@ Queste regole si aggiungono alle regole assolute dell'agente generico:
 9. **Sempre** Angular Material tokens via CSS custom properties — mai hex hardcoded nei component SCSS
 10. **Sempre** `HttpInterceptorFn` (functional) — mai class-based interceptors
 11. Usa `const` by default, `let` quando è necessario, **mai** `var`
+
+---
+
+## References & Further Reading
+
+### Official Documentation
+- [Angular Official Documentation](https://angular.io/docs) — guida completa e API reference
+- [Angular CLI](https://angular.io/cli) — comandi CLI e configurazione
+- [Angular Style Guide](https://angular.io/guide/styleguide) — convenzioni ufficiali
+- [Angular Signals](https://angular.io/guide/signals) — reactive state management
+- [Angular Zoneless](https://angular.io/guide/experimental/zoneless) — zoneless change detection
+- [Standalone Components](https://angular.io/guide/standalone-components) — standalone migration guide
+
+### Angular Material
+- [Angular Material](https://material.angular.io/) — component library documentation
+- [Material Theming Guide](https://material.angular.io/guide/theming) — customizzare temi
+- [Material Components](https://material.angular.io/components/categories) — lista componenti
+
+### NgRx & State Management
+- [NgRx Signals](https://ngrx.io/guide/signals) — SignalStore documentation
+- [NgRx Store](https://ngrx.io/guide/store) — classic store documentation (legacy)
+- [NgRx Effects](https://ngrx.io/guide/effects) — side effects management
+- [RxJS Documentation](https://rxjs.dev/) — operators, subjects, error handling
+
+### Testing
+- [Angular Testing Guide](https://angular.io/guide/testing) — TestBed e component testing
+- [Testing Library Angular](https://testing-library.com/docs/angular-testing-library/intro/) — user-centric testing
+- [Jest](https://jestjs.io/) — testing framework
+
+### Performance & Optimization
+- [Angular Performance Guide](https://angular.io/guide/performance) — best practices
+- [Web.dev Performance](https://web.dev/performance/) — Core Web Vitals
+- [Bundle Analyzer](https://www.npmjs.com/package/webpack-bundle-analyzer) — analizza bundle size
+
+### Tools & Extensions
+- [Angular DevTools](https://angular.io/guide/devtools) — Chrome extension per debugging
+- [Redux DevTools](https://github.com/reduxjs/redux-devtools) — per NgRx store debugging
+- [Angular ESLint](https://github.com/angular-eslint/angular-eslint) — linting rules
+- [Prettier](https://prettier.io/) — code formatting
+
+### Community & Learning
+- [Angular Blog](https://blog.angular.io/) — annunci ufficiali e novità
+- [Angular University](https://angular-university.io/) — corsi e tutorial avanzati
+- [Angular In Depth](https://indepth.dev/angular) — articoli approfonditi
+- [This is Angular](https://www.youtube.com/@ThisIsAngular) — podcast e video
+
+---
+
+**Last Updated**: March 2026  
+**Skill Version**: 2.0.0
