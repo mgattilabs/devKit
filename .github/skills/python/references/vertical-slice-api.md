@@ -499,28 +499,3 @@ def setup_middleware(app: FastAPI) -> None:
         response.headers["X-Process-Time"] = str(process_time)
         return response
 ```
-
----
-
-## Key Benefits
-
-| Aspect | Benefit |
-|--------|---------|
-| **Cohesion** | All code for a feature in one place |
-| **Independence** | Features can evolve separately |
-| **Testing** | Easy to test in isolation |
-| **Onboarding** | New devs understand one slice at a time |
-| **Scaling** | Extract to microservice if needed |
-
-## When to Use
-
-✅ **Good fit:**
-- REST/GraphQL APIs
-- Medium to large projects
-- Teams working on different features
-- Projects that may split into microservices
-
-❌ **Avoid when:**
-- Very small projects (< 3 features)
-- Heavy cross-feature dependencies
-- CRUD-only apps with no business logic

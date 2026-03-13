@@ -3,10 +3,6 @@ name: python-clean-code
 description: Write clean, maintainable Python code following PEP 8, type hints, and pragmatic clean architecture. Use when writing Python code, creating new Python projects, refactoring existing code, or reviewing Python implementations. Triggers on Python file creation, code generation requests, project scaffolding, or refactoring tasks.
 ---
 
-# Python Clean Code
-
-Write clean, maintainable Python code with proper structure and conventions.
-
 ## Core Principles
 
 1. **Type hints always** - Every function signature and class attribute
@@ -121,21 +117,6 @@ for line in read_large_file("huge.txt"):
     process(line)
 ```
 
-### Generator for Large Data
-
-```python
-# Bad: Returns full list in memory
-def read_lines(path: str) -> list[str]:
-    with open(path) as f:
-        return [line.strip() for line in f]
-
-# Good: Yields lines one at a time
-def read_lines(path: str) -> Iterator[str]:
-    with open(path) as f:
-        for line in f:
-            yield line.strip()
-```
-
 ### Avoid String Concatenation in Loops
 
 ```python
@@ -146,14 +127,6 @@ for item in items:
 
 # Good: O(n) using join
 result = "".join(str(item) for item in items)
-
-# Good: Using StringIO for building
-from io import StringIO
-
-buffer = StringIO()
-for item in items:
-    buffer.write(str(item))
-result = buffer.getvalue()
 ```
 
 ## Anti-Patterns to Avoid

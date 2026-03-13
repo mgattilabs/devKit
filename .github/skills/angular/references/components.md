@@ -183,39 +183,6 @@ export class CardComponent {}
 export class ParentComponent {}
 ```
 
-## Dependency Injection
-
-```typescript
-import { Component, inject } from '@angular/core';
-import { UserService } from './user.service';
-
-@Component({
-  selector: 'app-user-dashboard',
-  standalone: true
-})
-export class UserDashboardComponent {
-  // Modern inject() API
-  private userService = inject(UserService);
-  private router = inject(Router);
-
-  // Optional dependency
-  private logger = inject(LoggerService, { optional: true });
-
-  users = signal<User[]>([]);
-
-  ngOnInit() {
-    this.loadUsers();
-  }
-
-  loadUsers() {
-    this.userService.getUsers().subscribe({
-      next: users => this.users.set(users),
-      error: err => this.logger?.error('Failed to load users', err)
-    });
-  }
-}
-```
-
 ## New Control Flow (@if, @for)
 
 ```typescript

@@ -421,19 +421,6 @@ export class UsersEffects {
     )
   );
 
-  // Non-dispatching effect (side effect only)
-  logUserActions$ = createEffect(
-    () =>
-      this.actions$.pipe(
-        ofType(
-          UsersActions.addUserSuccess,
-          UsersActions.updateUserSuccess,
-          UsersActions.deleteUserSuccess
-        ),
-        tap(action => console.log('User action:', action))
-      ),
-    { dispatch: false }
-  );
 }
 ```
 
@@ -482,62 +469,6 @@ export class UsersListComponent {
 
   onDelete(id: string) {
     this.store.dispatch(UsersActions.deleteUser({ id }));
-  }
-}
-```
-
-## Facade Pattern (Classic Store - Optional)
-
-```typescript
-// users.facade.ts
-@Injectable({ providedIn: 'root' })
-export class UsersFacade {
-  private store = inject(Store);
-
-  // Selectors
-  users$ = this.store.select(selectAllUsers);
-  loading$ = this.store.select(selectUsersLoading);
-  error$ = this.store.select(selectUsersError);
-
-  // Actions
-  loadUsers() {
-    this.store.dispatch(UsersActions.loadUsers());
-  }
-
-  addUser(user: User) {
-    this.store.dispatch(UsersActions.addUser({ user }));
-  }
-
-  updateUser(id: string, changes: Partial<User>) {
-    this.store.dispatch(UsersActions.updateUser({ id, changes }));
-  }
-
-  deleteUser(id: string) {
-    this.store.dispatch(UsersActions.deleteUser({ id }));
-  }
-
-  getUserById(id: string) {
-    return this.store.select(selectUserById(id));
-  }
-}
-
-// Usage in component
-@Component({
-  selector: 'app-users',
-  standalone: true
-})
-export class UsersComponent {
-  private facade = inject(UsersFacade);
-
-  users = toSignal(this.facade.users$, { initialValue: [] });
-  loading = toSignal(this.facade.loading$, { initialValue: false });
-
-  ngOnInit() {
-    this.facade.loadUsers();
-  }
-
-  onAdd(user: User) {
-    this.facade.addUser(user);
   }
 }
 ```
