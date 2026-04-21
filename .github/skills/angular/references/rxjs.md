@@ -192,24 +192,6 @@ export class AutoCleanupComponent {
   }
 }
 
-// Legacy approach (still valid)
-@Component({
-  selector: 'app-manual-cleanup',
-  standalone: true
-})
-export class ManualCleanupComponent implements OnDestroy {
-  private destroy$ = new Subject<void>();
-
-  ngOnInit() {
-    this.dataService.getData().pipe(
-      takeUntil(this.destroy$)
-    ).subscribe();
-  }
-
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
 }
 ```
 
@@ -253,31 +235,6 @@ export class CombiningExamples {
     );
   }
 }
-```
-
-## Custom Operators
-
-```typescript
-import { Observable, OperatorFunction } from 'rxjs';
-import { tap } from 'rxjs/operators';
-
-// Custom operator for logging
-export function debug<T>(tag: string): OperatorFunction<T, T> {
-  return (source: Observable<T>) =>
-    source.pipe(
-      tap({
-        next: value => console.log(`[${tag}] Next:`, value),
-        error: err => console.error(`[${tag}] Error:`, err),
-        complete: () => console.log(`[${tag}] Complete`)
-      })
-    );
-}
-
-// Usage
-this.http.get('/api/data').pipe(
-  debug('API Call'),
-  map(data => transform(data))
-).subscribe();
 ```
 
 ## ShareReplay for Caching

@@ -21,22 +21,17 @@
 
 ---
 
-## ⚠️ MediatR è VIETATO
+## ⚠️ MediatR è VIETATO (commerciale dalla v12+)
 
-MediatR è diventato commerciale dalla v12+. Non pianificare, non usare, non
-suggerire `IRequest<T>`, `IRequestHandler<T>`, `IMediator`, `ISender` o qualsiasi
-tipo di MediatR. Il pattern approvato è il CQRS manuale documentato in questa skill.
+Non usare `IRequest<T>`, `IRequestHandler<T>`, `IMediator`, `ISender`. Pattern approvato: CQRS manuale.
 
 ---
 
 ## Architecture Invariants (NON MODIFICARE SENZA RICHIESTA ESPLICITA)
 
-Queste invarianti valgono per **tutti** i progetti .NET. Non si cambiano, non si semplificano,
-non si accorpano. Qualsiasi piano che le viola è un errore.
+Valgono per **tutti** i progetti .NET. Qualsiasi piano che le viola è un errore.
 
-### 1. Clean Architecture — Quattro progetti, sempre
-
-Ogni progetto .NET usa la struttura Clean Architecture con esattamente quattro progetti:
+### 1. Quattro progetti sempre, cartella radice `sources/`
 
 ```
 sources/
@@ -45,158 +40,45 @@ sources/
 ├── [NomeProgetto].Domain/           // Entità, value objects, eventi, interfacce
 └── [NomeProgetto].Infrastructure/   // Persistenza, servizi esterni
 ```
+Mai accorpare. Mai aggiungere un quinto progetto senza richiesta esplicita.
 
-- `[NomeProgetto]` è il nome della soluzione (es. `ViaFrancigena`, `ContoCorso`, ecc.)
-- La cartella radice è `sources/`, non `src/`
-- **Mai accorpare progetti** — anche per feature piccole, i quattro progetti esistono sempre
-- **Mai aggiungere un quinto progetto** senza richiesta esplicita
-
-### 2. Split per App Context — Api e Application
-
-Il layer **Api** e il layer **Application** sono organizzati per **contesto applicativo**:
+### 2. Api + Application: split per app context (Cms, Website, PWA, Planner, Identity)
 
 ```
-sources/[NomeProgetto].Api/
-├── Endpoints/
-│   ├── Cms/              // Backoffice / content management
-│   ├── Website/          // Sito pubblico
-│   ├── PWA/              // Progressive Web App
-│   ├── Planner/          // Pianificatore
-│   └── Identity/         // Auth, utenti, ruoli
-└── ...
-
-sources/[NomeProgetto].Application/
-├── UseCases/
-│   ├── Cms/
-│   │   └── {Feature}/
-│   ├── Website/
-│   │   └── {Feature}/
-│   ├── PWA/
-│   │   └── {Feature}/
-│   ├── Planner/
-│   │   └── {Feature}/
-│   └── Identity/
-│       └── {Feature}/
-└── ...
+sources/[NomeProgetto].Api/Endpoints/{AppContext}/{Feature}Endpoint.cs
+sources/[NomeProgetto].Application/UseCases/{AppContext}/{Feature}/{Feature}Command.cs
+                                                         {Feature}Handler.cs
+                                                         {Feature}Query.cs
+                                                         {Feature}QueryHandler.cs
+                                                         {Feature}Response.cs
 ```
 
-- I contesti possono variare tra progetti, ma la struttura per-contesto è obbligatoria
-- Un endpoint appartiene sempre a un solo contesto
-- Un handler in Application appartiene allo stesso contesto del suo endpoint
-
-### 3. Split per Feature Interna — Domain e Infrastructure
-
-Il layer **Domain** e il layer **Infrastructure** sono organizzati per **feature di dominio**
-(non per contesto applicativo):
+### 3. Domain + Infrastructure: split per feature di dominio
 
 ```
 sources/[NomeProgetto].Domain/
-├── Entities/
-│   ├── Routes/           // Feature: percorsi
-│   ├── Stages/           // Feature: tappe
-│   ├── Users/            // Feature: utenti
-│   └── ...
-├── ValueObjects/
-├── Events/
-└── Interfaces/
+├── Entities/{Feature}/   ├── ValueObjects/   ├── Events/   └── Interfaces/
 
 sources/[NomeProgetto].Infrastructure/
-├── Persistence/
-│   └── Database/
-│       ├── AppDbContext.cs
-│       └── Configurations/          // ← un file per aggregate/entity
-│           ├── RouteConfiguration.cs
-│           ├── StageConfiguration.cs
-│           ├── UserConfiguration.cs
-│           └── ...
+├── Persistence/Database/
+│   ├── AppDbContext.cs
+│   └── Configurations/   // un file per aggregate/entity
 ├── Repositories/
 └── Services/
 ```
 
-### 4. EF Core Configuration — Granularità obbligatoria
+### 4. EF Config: un file per aggregate/entity
 
-- **Un file di configurazione per aggregate/entity** in `sources/[NomeProgetto].Infrastructure/Persistence/Database/Configurations/`
-- Il path è esattamente questo — non `Persistence/Configurations/`, non `Data/Configurations/`
-- Mai configurazioni inline nel `DbContext` — sempre `IEntityTypeConfiguration<T>` in file separato
+Path obbligatorio: `sources/[NomeProgetto].Infrastructure/Persistence/Database/Configurations/`
+Mai configurazioni inline nel DbContext. Sempre `IEntityTypeConfiguration<T>` in file separato.
 
----
-
-## Struttura Cartelle — Vertical Slice (dentro Clean Architecture)
-
-> Le Architecture Invariants impongono **sempre** i 4 progetti Clean Architecture.
-> Il Vertical Slice è il pattern organizzativo **interno** al layer Application:
-> ogni feature è una cartella autocontenuta con command, handler, query, response.
-
-```
-sources/[NomeProgetto].Application/
-└── UseCases/
-    └── {AppContext}/                    // Cms, Website, PWA, Planner, Identity
-        └── {Feature}/
-            ├── {Feature}Command.cs      // Record input per write operations
-            ├── {Feature}Handler.cs      // Implements ICommandHandler<TCmd, TResult>
-            ├── {Feature}Validator.cs    // Validazione manuale (opzionale)
-            ├── {Feature}Query.cs        // Record input per read operations
-            ├── {Feature}QueryHandler.cs // Implements IQueryHandler<TQuery, TResult>
-            └── {Feature}Response.cs     // DTO — solo campi necessari al client
-```
-
-Gli endpoint corrispondenti vivono nel layer Api, nello stesso contesto applicativo:
-
-```
-sources/[NomeProgetto].Api/
-└── Endpoints/
-    └── {AppContext}/
-        └── {Feature}Endpoint.cs         // Minimal API — inietta handler direttamente
-```
-
----
-
-## Struttura Cartelle — Clean / Onion
-
-> ⚠️ Questa è l'architettura obbligatoria. Vedi "Architecture Invariants" sopra per i vincoli non negoziabili.
-
-```
-sources/
-├── [NomeProgetto].Domain/            // ZERO dipendenze esterne
-│   ├── Entities/
-│   │   └── {Feature}/                // Split per feature di dominio
-│   ├── ValueObjects/
-│   ├── Events/
-│   └── Interfaces/                   // Repository interfaces definite qui
-├── [NomeProgetto].Application/       // Dipende solo da Domain
-│   ├── UseCases/
-│   │   └── {AppContext}/             // Split per contesto applicativo (Cms, Website, PWA, ...)
-│   │       └── {Feature}/
-│   │           ├── {Feature}Command.cs
-│   │           ├── {Feature}Handler.cs
-│   │           ├── {Feature}Query.cs
-│   │           ├── {Feature}QueryHandler.cs
-│   │           └── {Feature}Response.cs
-│   └── Abstractions/
-│       ├── ICommandHandler.cs
-│       ├── IQueryHandler.cs
-│       └── Result.cs
-├── [NomeProgetto].Infrastructure/    // Dipende da Domain + Application
-│   ├── Persistence/
-│   │   └── Database/
-│   │       ├── AppDbContext.cs
-│   │       └── Configurations/       // Un file per aggregate/entity
-│   ├── Repositories/
-│   └── Services/
-└── [NomeProgetto].Api/               // Layer più esterno
-    ├── Program.cs
-    ├── Endpoints/
-    │   └── {AppContext}/             // Split per contesto applicativo
-    └── Middleware/
-```
-
-**Dipendenze**: `Api → Infrastructure → Application → Domain`. Domain non referenzia nulla.
+**Dipendenze**: `Api → Infrastructure → Application → Domain`. Domain zero dipendenze.
 
 ---
 
 ## CQRS Manuale — Template Obbligatori
 
-### Le due interfacce base (in `[NomeProgetto].Application/Abstractions/`)
+### Interfacce base (`[NomeProgetto].Application/Abstractions/`)
 
 ```csharp
 // Tutte le write operations
@@ -469,12 +351,7 @@ public sealed record Money
 
 ## EF Core — Regole Obbligatorie
 
-Queste regole si applicano a ogni singola query. Non esistono eccezioni.
-
-Le query di lettura usano sempre `AsNoTracking()` e proiettano su DTO con `Select()`.
-Non si carica mai un'entity completa per operazioni read-only.
-Le query di scrittura usano le entity tracked attraverso il repository o direttamente
-dal DbContext.
+Read: `AsNoTracking()` + `Select()` su DTO. Write: entità tracked. Mai caricare entità complete per read-only.
 
 ```csharp
 // ✅ Read — AsNoTracking + projection
@@ -533,91 +410,14 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
 
 ### EF Migrations — MAI creare, solo suggerire
 
-Neo **non crea mai migrazioni EF Core** durante l'implementazione. Le migrazioni sono
-un'operazione manuale che il developer esegue dopo aver verificato il codice.
-
-Al termine dell'implementazione di una feature che modifica lo schema (nuove entity,
-nuove proprietà, nuove configuration), Neo aggiunge un blocco nel riepilogo finale:
-
+A fine implementazione aggiungere al riepilogo:
 ```
 📦 MIGRAZIONE NECESSARIA
-Le seguenti modifiche allo schema richiedono una migrazione EF Core:
-- [elenco delle entity/configuration create o modificate]
-
-Comando suggerito:
-  dotnet ef migrations add [NomeDescrittivo] --project sources/[NomeProgetto].Infrastructure --startup-project sources/[NomeProgetto].Api
-
-Dopo la migrazione, verificare il file generato prima di applicarlo.
+[elenco entity/configuration modificate]
+dotnet ef migrations add [NomeDescrittivo] --project sources/[NomeProgetto].Infrastructure --startup-project sources/[NomeProgetto].Api
 ```
-
-**Regole:**
-- ❌ MAI eseguire `dotnet ef migrations add` — solo suggerire il comando
-- ❌ MAI eseguire `dotnet ef database update` — solo suggerire il comando
-- ✅ Sempre indicare quali entity/configuration hanno impatto sullo schema
-- ✅ Sempre proporre un nome descrittivo per la migrazione (es. `AddOrderEntity`, `AddStageStartDate`)
-
----
-
-## Object Calisthenics — Esempi C#
-
-```csharp
-// ✅ Un livello di indentazione — estratto il body del loop
-public void ProcessOrders(IEnumerable<Order> orders)
-{
-    foreach (var order in orders)
-        ProcessSingleOrder(order);
-}
-
-// ✅ No else — guard clause + early return
-public Result<Guid> ConfirmOrder(Order order)
-{
-    if (order is null) return Result<Guid>.Failure("Ordine non trovato.");
-    if (order.Status != OrderStatus.Draft)
-        return Result<Guid>.Failure("Solo gli ordini in bozza possono essere confermati.");
-
-    order.Confirm();
-    return Result<Guid>.Success(order.Id);
-}
-
-// ✅ Primitive wrapping — Quantity con validazione integrata
-public readonly record struct Quantity
-{
-    public int Value { get; }
-    private Quantity(int value) => Value = value;
-
-    public static Quantity From(int value)
-    {
-        if (value <= 0)
-            throw new DomainException("La quantità deve essere maggiore di zero.");
-        return new Quantity(value);
-    }
-}
-```
-
----
-
-## Clean Code — Esempi C#
-
-```csharp
-// ❌ Magic number
-if (elapsedSeconds > 86400) ExpireSession();
-
-// ✅ Costante nominata
-private const int SecondsInADay = 86400;
-if (elapsedSeconds > SecondsInADay) ExpireSession();
-
-// ❌ Condizione criptica
-if (user.Age >= 18 && user.HasValidId && !user.IsBanned && sub.EndDate > DateTime.Now)
-    GrantAccess();
-
-// ✅ Condizioni espressive
-bool isAdult = user.Age >= 18;
-bool hasValidCredentials = user.HasValidId && !user.IsBanned;
-bool hasActiveSubscription = sub.EndDate > DateTime.Now;
-bool canAccess = isAdult && hasValidCredentials && hasActiveSubscription;
-
-if (canAccess) GrantAccess();
-```
+- MAI eseguire `dotnet ef migrations add` o `dotnet ef database update`
+- Sempre nomi descrittivi (es. `AddOrderEntity`, `AddStageStartDate`)
 
 ---
 

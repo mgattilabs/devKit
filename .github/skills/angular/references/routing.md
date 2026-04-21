@@ -41,19 +41,6 @@ export const routes: Routes = [
   }
 ];
 
-// app.config.ts
-import { provideRouter, withComponentInputBinding } from '@angular/router';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(
-      routes,
-      withComponentInputBinding(),  // Bind route params to @Input()
-      withViewTransitions(),        // Enable view transitions
-      withPreloading(PreloadAllModules)
-    )
-  ]
-};
 ```
 
 ## Lazy Loading
@@ -286,42 +273,6 @@ export class DashboardComponent {}
 
 // Navigate to named outlet
 this.router.navigate(['/dashboard', { outlets: { panel: ['stats'] } }]);
-```
-
-## Preloading Strategies
-
-```typescript
-// Custom preloading strategy
-import { Injectable } from '@angular/core';
-import { PreloadingStrategy, Route } from '@angular/router';
-import { Observable, of, timer } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
-
-@Injectable({ providedIn: 'root' })
-export class CustomPreloadingStrategy implements PreloadingStrategy {
-  preload(route: Route, load: () => Observable<any>): Observable<any> {
-    // Only preload routes with data.preload = true
-    if (route.data?.['preload']) {
-      const delay = route.data?.['preloadDelay'] || 0;
-      return timer(delay).pipe(
-        mergeMap(() => load())
-      );
-    }
-    return of(null);
-  }
-}
-
-// Route config with preload data
-const routes: Routes = [
-  {
-    path: 'important',
-    loadChildren: () => import('./important/important.routes'),
-    data: { preload: true, preloadDelay: 2000 }
-  }
-];
-
-// Register in app config
-provideRouter(routes, withPreloading(CustomPreloadingStrategy))
 ```
 
 ## Route Guards with Observables

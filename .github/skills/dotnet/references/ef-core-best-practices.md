@@ -1,7 +1,5 @@
 # Entity Framework Core Best Practices
 
-Performance optimization and best practices for EF Core in production applications.
-
 ## Query Optimization
 
 ### 1. Use AsNoTracking for Read-Only Queries
@@ -326,30 +324,4 @@ var products = await _context.Products
 builder.Property(p => p.FullName)
     .HasComputedColumnSql("[FirstName] + ' ' + [LastName]");
 builder.HasIndex(p => p.FullName);
-```
-
-## Monitoring and Diagnostics
-
-```csharp
-// Log slow queries
-services.AddDbContext<AppDbContext>(options =>
-{
-    options.UseSqlServer(connectionString);
-
-    options.LogTo(
-        filter: (eventId, level) => eventId.Id == CoreEventId.QueryExecutionPlanned.Id,
-        logger: (eventData) =>
-        {
-            if (eventData is QueryExpressionEventData queryData)
-            {
-                var duration = queryData.Duration;
-                if (duration > TimeSpan.FromSeconds(1))
-                {
-                    _logger.LogWarning("Slow query detected: {Duration}ms - {Query}",
-                        duration.TotalMilliseconds,
-                        queryData.Expression);
-                }
-            }
-        });
-});
 ```

@@ -232,9 +232,3 @@ def process_orders(orders: list[Order]) -> list[Result]:
         results.append(Result(order_id=order.id, total=final))
     return results
 ```
-
-Why avoid nested functions:
-- Harder to test in isolation
-- Cannot be reused elsewhere
-- Increases cognitive load
-- Hides complexity instead of managing it
