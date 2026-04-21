@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "python .github/hooks/export_chat_hook.py",
+        "timeout": 45
+      }
+    ],
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "python .github/hooks/export_chat_hook.py",
+        "timeout": 45
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python .github/hooks/export_chat_hook.py",
+        "timeout": 45
+      }
+    ]
+  }
+}
