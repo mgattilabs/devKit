@@ -1,14 +1,6 @@
----
-name: review-performance
-description: "Checklist for detecting performance issues, inefficiencies, and optimization opportunities in a code diff. Use when reviewing code for performance."
-user-invocable: false
----
+# CHECKLIST:PERFORMANCE — Performance Review
 
-# Performance Review Checklist
-
-Analyze only the lines present in the diff (added/changed lines) for performance problems.
-
-## Checklist
+Analyze only the added/changed lines for performance problems.
 
 ### Algorithmic Complexity
 - [ ] Nested loops over the same data (O(n²) or worse where O(n) is achievable)?
@@ -40,12 +32,6 @@ Analyze only the lines present in the diff (added/changed lines) for performance
 - [ ] Unused return values from expensive operations?
 - [ ] DOM/layout thrashing (read-write interleaving in a loop)?
 
-## Output Format
-
-Return a bulleted list:
-
-```
-- **[File:Line]** `code snippet` — Performance problem and suggested fix.
-```
-
-If no issues found: `No performance issues found.`
+**Output**: bulleted list:
+- **[File:Line]** `snippet` — Performance problem and suggested fix.
+If nothing found: `No performance issues found.`
