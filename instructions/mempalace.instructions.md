@@ -1,93 +1,100 @@
-# Copilot Instructions — MemPalace Memory System
+---
+name: 'MemPalace memory rules'
+description: 'Persistent memory via MemPalace CLI and Python API. Search before answering, save after deciding, operate silently.'
+applyTo: '**'
+---
 
-You have access to MemPalace, a persistent memory system.
-Use it as durable memory and retrieval, not as optional note-taking.
+# MemPalace — operating rules
 
-Raw chat capture is handled by hooks. Do not treat the model as the primary verbatim recorder. Use MemPalace to retrieve prior context, keep project/wing structure consistent, and file additional durable context when structured storage is useful.
+You have CLI and Python API access to MemPalace: a local, verbatim memory store
+organized as **wings** (projects / people), **rooms** (sessions / topics), and
+**drawers** (exact text). It also exposes a temporal **knowledge graph** and
+per-agent **diaries**.
 
-## Mandatory Setup Gate
+Use it on every turn. Memory is not optional.
 
-At the start or resumption of ANY session, complete these steps in order:
+## Calling conventions
 
-1. Read this instruction file fully and treat it as an execution gate, not background guidance.
-2. Bootstrap the chat session by loading palace context using the MemPalace status and discovery tools exposed in the current environment.
-3. Identify the current wing and keep it fixed for the session.
-4. Inspect the available MemPalace tools before attempting memory reads or writes.
+- **CLI** for ingestion, search, status, and wake-up:
+  `mempalace search "query"`, `mempalace wake-up --wing <wing>`, `mempalace status`
+- **Python API** for drawer CRUD, knowledge graph, diary, tunnels, and navigation:
+  `python -c "from mempalace.mcp_server import <tool_function>; import json; print(json.dumps(<tool_function>(<args>), indent=2, default=str))"`
 
-If any required setup step cannot be completed, do not continue as though setup succeeded.
-State which step is blocked, why it is blocked, and what viable fallback or next action is available.
+See the mempalace skill reference files for complete calling patterns.
 
-In the first progress update of a task, explicitly confirm whether setup is complete.
+## At session start
 
-Note: tool names may be exposed with MCP namespace prefixes in some environments. Use the MemPalace status, wing listing, search, KG, drawer, duplicate-check, and diary tools that are actually available instead of assuming an exact literal tool name.
+Run a wake-up scoped to the active wing (infer it from the workspace folder
+name). Pull recent drawers and active knowledge-graph entities into context
+before the first reply:
 
-## Memory Protocol
+```bash
+mempalace wake-up --wing <wing_name>
+```
 
-1. ON WAKE-UP / SESSION START / SESSION RESUME: call the MemPalace status tool once to bootstrap active palace context, then call the wing-listing tool. Do not call status on every message. Re-check status only when resuming after interruption, after a configuration change, or when palace state is genuinely uncertain.
-2. BEFORE RESPONDING about any person, project, past event, prior decision, or user preference: call MemPalace search, or KG query, FIRST. Never guess. Unless the fact is directly available in the current session context.
-3. IF UNSURE about a fact: say "let me check" and query the palace.
-4. WHEN FACTS CHANGE: invalidate the old fact if needed, then add the new fact.
-5. TO SAVE MEMORIES: use drawer filing for durable context that should remain queryable as a first-class memory item. Prefer verbatim content when storing decisions, preferences, key repro steps, or exact user wording that matters later. Summaries and diary entries are supplementary and must not replace drawer filing when durable structured recall is needed.
+If no matching wing exists, do a cross-wing search on the workspace name
+and the open file's top-level identifiers:
 
-## Wing Discipline
+```bash
+mempalace search "<workspace name>"
+```
 
-The palace uses wings to separate projects. Every save must include the correct wing.
-To determine the wing for this session:
+## Before any non-trivial answer
 
-1. Call the wing-listing tool first and prefer an existing matching wing if one clearly corresponds to the current project.
-2. If there is no established wing, derive one from the workspace folder name using a stable lowercase slug.
-3. Use this wing consistently for all saves in the session.
-4. Never mix wings within one task unless the user is explicitly working across projects.
+1. Search the palace for the topic of the user's request. This is mandatory
+   whenever the user uses "we", "our", "before", "remember", "the project",
+   or anything that implies prior context:
+   ```bash
+   mempalace search "<topic>"
+   ```
+2. Use cross-wing search when the topic spans projects (shared skills,
+   recurring patterns, infrastructure decisions).
+3. Treat retrieved drawers as authoritative. Quote the user's exact words
+   when relevant. Never paraphrase past statements back to them.
 
-## Clean Chat Rule
+## After any decision, design choice, or non-obvious finding
 
-Do not inform the user in every response that you are 'checking mempalace storage' or similar. Just do it. The user can see the commands that are run as part of the chat environment and will know. Similarly, after reading instructions, do not state 'I read the instructions', or similar, in every response. Efficient transparency is good, but excessive transparency is noise. Use your judgment to strike the right balance.
-The one explicit exception is the bootstrap step at the start of the session where you confirm whether setup is complete.
+Append a new drawer in the appropriate wing/room:
 
-## Save Strategy
+```bash
+python -c "
+from mempalace.mcp_server import tool_add_drawer
+import json
+result = tool_add_drawer(wing='<wing>', room='<room>', content='''<verbatim content>''')
+print(json.dumps(result, indent=2, default=str))
+"
+```
 
-Hook-exported transcripts are mined by MemPalace outside the agent. Use MemPalace saves for durable structured recall, not as a duplicate dump of everything.
+Store verbatim — never rewrite the user's words. Prepend a short structured
+header (date, topic, related entities).
 
-Good candidates for drawer filing:
+Update the knowledge graph when a person, project, library, or external
+entity is introduced, changed, or invalidated:
 
-- exact user preferences that will matter later
-- key repro steps or observations worth retrieving independently of the full transcript
-- confirmed decisions, constraints, and resolved ambiguities
-- facts whose old values may later need invalidation
+```bash
+python -c "
+from mempalace.mcp_server import tool_kg_add
+import json
+result = tool_kg_add(subject='<entity>', predicate='<relationship>', object='<value>')
+print(json.dumps(result, indent=2, default=str))
+"
+```
 
-Do not skip a useful durable save merely because duplication is possible, but also do not create redundant manual saves for context that the hook-captured transcript already preserves unless separate retrieval value is clear.
+## Operate silently
 
-## Transcript Mining Rule
+- Do not narrate tool calls. No "let me check the palace", no "I'll save
+  this to memory", no "based on what I found".
+- Do not list the tools used or the drawers retrieved unless the user
+  explicitly asks what you remember.
+- Memory must feel native: context appears, decisions persist, no
+  scaffolding shown.
 
-Hook-captured chat transcripts are exported and filed outside the agent.
-The hook exports the verbatim session transcript as plain text, files one explicit long-form transcript drawer for that session under a separate `transcript.full.raw` source identity, and then runs normal MemPalace conversation mining on `transcript.txt`.
+## Never
 
-Do not create a parallel manual chat-summary workflow for normal transcript ingest.
-For hook-captured chat history, prefer retrieving from:
-
-- the explicit long-form transcript drawer in `chat_transcript_full` when exact history matters
-- the mined conversation records when you want upstream MemPalace's normal chunked representation
-- the closet layers when compact retrieval is enough
-
-## Diary Rule
-
-Diary entries are allowed as compressed session logs, and should be considered parallel to any other memories made through your environment.
-Use diary writes for session-level recap only.
-
-## Pre-Final Check
-
-Before sending a final answer, verify all of the following:
-
-1. I completed the mandatory setup gate or clearly reported the blocking step.
-2. I queried MemPalace before stating facts about prior context, people, projects, or past decisions or the info is directly available in the current session context.
-3. If I created a durable save, it used the correct wing and a retrieval-appropriate room.
-
-## Key Tools
-
-- status tool — palace overview, protocol, active storage path
-- wing listing tool — discover existing project wings
-- search tool — semantic retrieval
-- KG query tool — entity relationships and stored facts
-- drawer filing tool — durable verbatim memory storage
-- duplicate-check tool — reduce duplicate filing
-- diary tool — compressed session recap only
+- Never paraphrase or summarize when writing to a drawer.
+- Never overwrite or delete a drawer — append-only is a hard rule of the
+  system.
+- Never fabricate context. If a search returns nothing, say so plainly and
+  proceed without inventing prior history.
+- Never expose palace internals (raw drawer IDs, wing names the user did
+  not introduce) unless asked.
